@@ -1,0 +1,18 @@
+server:
+  port: "8080"
+  mode: "debug"
+
+mongodb:
+  uri: "mongodb://127.0.0.1:27017"
+  database: "chatweb"
+
+jwt:
+  secret: "your-secret-key"
+  expire_time: 24
+
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  bucket: "chatweb"
+  use_ssl: false
