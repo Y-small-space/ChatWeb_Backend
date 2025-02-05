@@ -4,7 +4,7 @@ import (
 	"chatweb/internal/model"
 	"chatweb/internal/repository/mongodb"
 	"context"
-	"log"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -72,19 +72,22 @@ func (r *UserRepository) Update(ctx context.Context, id primitive.ObjectID, upda
 	return err
 }
 
-func (r *UserRepository) SearchUser(ctx context.Context, query string) (*model.User, error) {
-	log.Println("query", query)
+// SearchUserByIdentifier 通过标识符（手机号、邮箱或用户名）搜索用户
+func (r *UserRepository) SearchUserByIdentifier(ctx context.Context, identifier string) (*model.User, error) {
 	filter := bson.M{
 		"$or": []bson.M{
-			{"mail": query},
-			{"username": query},
-			{"phone": query},
+			{"email": identifier},
+			{"username": identifier},
+			{"phone": identifier},
 		},
 	}
 
 	var user model.User
 	err := r.collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("user not found")
+		}
 		return nil, err
 	}
 

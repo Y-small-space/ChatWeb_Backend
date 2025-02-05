@@ -17,6 +17,7 @@ const (
 	GroupCollection        = "CHATROOM_DB_groups"
 	FileCollection         = "CHATROOM_DB_files"
 	NotificationCollection = "CHATROOM_DB_notifications"
+	FriendshipCollection   = "CHATROOM_DB_friendships"
 )
 
 func InitMongoDB(uri, dbName string) {
@@ -52,4 +53,8 @@ func GetFileCollection() *mongo.Collection {
 
 func GetNotificationCollection() *mongo.Collection {
 	return DB.Collection(NotificationCollection)
+}
+
+func GetFriendshipCollection() *mongo.Collection {
+	return DB.Collection(FriendshipCollection)
 }

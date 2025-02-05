@@ -41,6 +41,7 @@ func main() {
 	groupRepo := repository.NewGroupRepository()
 	fileRepo := repository.NewFileRepository()
 	notificationRepo := repository.NewNotificationRepository()
+	friendshipRepo := repository.NewFriendshipRepository()
 
 	// 创建事件总线
 	eventBus := event.NewEventBus()
@@ -51,6 +52,7 @@ func main() {
 	groupService := service.NewGroupService(groupRepo)
 	fileService := service.NewFileService(fileRepo, minioClient)
 	notificationService := service.NewNotificationService(notificationRepo, eventBus)
+	friendshipService := service.NewFriendshipService(friendshipRepo, userRepo)
 	// 创建WebSocket hub
 	wsHub := websocket.NewHub(eventBus)
 	onlineService := service.NewOnlineService(userRepo, eventBus)
@@ -63,6 +65,7 @@ func main() {
 	fileHandler := api.NewFileHandler(fileService)
 	notificationHandler := api.NewNotificationHandler(notificationService)
 	onlineHandler := api.NewOnlineHandler(onlineService)
+	friendshipHandler := api.NewFriendshipHandler(friendshipService)
 
 	// 设置gin模式
 	gin.SetMode(cfg.Server.Mode)
@@ -82,6 +85,7 @@ func main() {
 		File:         fileHandler,
 		Notification: notificationHandler,
 		Online:       onlineHandler,
+		Friendship:   friendshipHandler,
 	}
 
 	// 初始化路由

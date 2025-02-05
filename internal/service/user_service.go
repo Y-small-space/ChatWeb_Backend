@@ -82,6 +82,6 @@ func (s *UserService) UpdateUser(ctx context.Context, userID string, updates map
 	return s.userRepo.Update(ctx, objID, updates)
 }
 
-func (s *UserService) SearchUser(ctx context.Context, query string) (*model.User, error) {
-	return s.userRepo.SearchUser(ctx, query)
+func (s *UserService) SearchUser(ctx context.Context, identifier string) (*model.User, error) {
+	return s.userRepo.SearchUserByIdentifier(ctx, identifier)
 }

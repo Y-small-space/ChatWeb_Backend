@@ -24,6 +24,10 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		authorized.PUT("/user/profile", handlers.User.UpdateProfile)
 		authorized.GET("/user/search", handlers.User.SearchUser)
 
+		// 好友相关路由
+		authorized.POST("/friendship/request", handlers.Friendship.SendRequest)
+		authorized.GET("/friendship/list", handlers.Friendship.GetFriendsList)
+
 		// WebSocket连接
 		authorized.GET("/ws", handlers.Chat.HandleWebSocket)
 
@@ -71,4 +75,5 @@ type Handlers struct {
 	Notification *NotificationHandler
 	Online       *OnlineHandler
 	Message      *MessageHandler
+	Friendship   *FriendshipHandler
 }
