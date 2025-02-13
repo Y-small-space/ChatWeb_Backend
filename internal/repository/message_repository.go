@@ -162,7 +162,7 @@ func (r *MessageRepository) GetGroupUnreadCount(ctx context.Context, groupID pri
 		"group_id": groupID,
 		"read_by.user_id": bson.M{
 			"$ne": userID,
-		},
+		}, 
 	}
 
 	return r.collection.CountDocuments(ctx, filter)
