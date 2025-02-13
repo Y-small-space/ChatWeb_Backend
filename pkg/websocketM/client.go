@@ -1,4 +1,4 @@
-package websocket
+package websocketM
 
 import (
 	"context"
@@ -134,13 +134,13 @@ func (c *Client) ReadPump() {
 // 包括定期发送心跳包以保持连接活跃
 func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		if err := c.onlineService.SetUserOffline(context.Background(), c.id); err != nil {
-			log.Printf("Failed to set user offline: %v", err)
-		}
-		c.conn.Close()
-	}()
+	// defer func() {
+	// 	ticker.Stop()
+	// 	if err := c.onlineService.SetUserOffline(context.Background(), c.id); err != nil {
+	// 		log.Printf("Failed to set user offline: %v", err)
+	// 	}
+	// 	c.conn.Close()
+	// }()
 
 	for {
 		select {

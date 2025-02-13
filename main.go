@@ -11,7 +11,7 @@ import (
 	"chatweb/middleware"
 	"chatweb/pkg/event"
 	"chatweb/pkg/storage"
-	"chatweb/pkg/websocket"
+	"chatweb/pkg/websocketM"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,7 +54,7 @@ func main() {
 	notificationService := service.NewNotificationService(notificationRepo, eventBus)
 	friendshipService := service.NewFriendshipService(friendshipRepo, userRepo)
 	// 创建WebSocket hub
-	wsHub := websocket.NewHub(eventBus)
+	wsHub := websocketM.NewHub(eventBus)
 	onlineService := service.NewOnlineService(userRepo, eventBus)
 	go wsHub.Run()
 

@@ -34,11 +34,11 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		// 聊天相关
 		authorized.POST("/chat/message", handlers.Chat.SendMessage)
 		authorized.GET("/chat/messages", handlers.Chat.GetMessages)
-		authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
-		authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)
-		authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
-		authorized.GET("/groups/:group_id/messages/unread", handlers.Message.GetGroupUnreadMessages)
-		authorized.PUT("/groups/messages/:id/read", handlers.Message.MarkGroupMessageAsRead)
+		// authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
+		// authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)
+		// authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
+		// authorized.GET("/groups/:group_id/messages/unread", handlers.Message.GetGroupUnreadMessages)
+		// authorized.PUT("/groups/messages/:id/read", handlers.Message.MarkGroupMessageAsRead)
 
 		// 群聊相关
 		authorized.POST("/group", handlers.Group.Create)

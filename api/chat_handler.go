@@ -4,12 +4,13 @@ import (
 	"chatweb/internal/model"
 	"chatweb/internal/service"
 	"chatweb/pkg/event"
-	"chatweb/pkg/websocket"
+	"chatweb/pkg/websocketM"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -19,7 +20,7 @@ type ChatHandler struct {
 	notificationService *service.NotificationService // 通知服务
 	groupService        *service.GroupService        // 群组服务
 	onlineService       *service.OnlineService       // 在线状态服务
-	wsHub               *websocket.Hub               // WebSocket Hub
+	wsHub               *websocketM.Hub               // WebSocket Hub
 	upgrader            websocket.Upgrader           // WebSocket 升级器
 }
 
@@ -36,7 +37,7 @@ func NewChatHandler(
 		notificationService: notificationService,
 		groupService:        groupService,
 		onlineService:       onlineService,
-		wsHub:               websocket.NewHub(eventBus), // 初始化 WebSocket Hub
+		wsHub:               websocketM.NewHub(eventBus), // 初始化 WebSocket Hub
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024, // 设置 WebSocket 读取缓冲区大小
 			WriteBufferSize: 1024, // 设置 WebSocket 写入缓冲区大小
@@ -63,13 +64,13 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 	}
 
 	// 创建 WebSocket 客户端并注册到 Hub
-	client := websocket.NewClient(h.wsHub, conn, userID, h.onlineService)
+	client := websocketM.NewClient(h.wsHub, conn, userID, h.onlineService)
 	h.wsHub.Register(client)
 
 	// 设置用户为在线状态
-	if err := h.onlineService.SetUserOnline(c.Request.Context(), userID); err != nil {
-		log.Printf("Failed to set user online: %v", err)
-	}
+	// if err := h.onlineService.SetUserOnline(c.Request.Context(), userID); err != nil {
+	// 	log.Printf("Failed to set user online: %v", err)
+	// }
 
 	// 启动客户端的读写协程
 	go client.WritePump()
