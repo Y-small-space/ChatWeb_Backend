@@ -5,6 +5,7 @@ import (
 	"chatweb/internal/repository/mongodb"
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,10 +25,12 @@ func NewMessageRepository() *MessageRepository {
 }
 
 func (r *MessageRepository) Create(ctx context.Context, message *model.Message) error {
+	log.Println("createMessage", message)
 	message.CreatedAt = time.Now()
 	message.UpdatedAt = time.Now()
 
 	result, err := r.collection.InsertOne(ctx, message)
+	log.Println(result)
 	if err != nil {
 		return err
 	}
@@ -162,7 +165,7 @@ func (r *MessageRepository) GetGroupUnreadCount(ctx context.Context, groupID pri
 		"group_id": groupID,
 		"read_by.user_id": bson.M{
 			"$ne": userID,
-		}, 
+		},
 	}
 
 	return r.collection.CountDocuments(ctx, filter)

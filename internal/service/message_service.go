@@ -32,6 +32,9 @@ func NewMessageService(messageRepo *repository.MessageRepository, readCache *Rea
 
 // CreateMessage 创建一条消息
 func (s *MessageService) CreateMessage(ctx context.Context, message *model.Message) error {
+	// log.Printf("message123", message)
+	log.Println("CreateMessage 创建一条消息")
+	log.Printf(message.Content)
 	return s.messageRepo.Create(ctx, message) // 将消息存入数据库
 }
 
@@ -65,6 +68,7 @@ func (s *MessageService) GetUserMessages(ctx context.Context, userID string, oth
 
 	return s.messageRepo.GetMessages(ctx, filter, limit, offset) // 查询消息
 }
+
 
 // GetGroupMessages 获取群组消息
 func (s *MessageService) GetGroupMessages(ctx context.Context, groupID string, limit, offset int) ([]*model.Message, error) {

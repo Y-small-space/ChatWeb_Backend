@@ -13,6 +13,8 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 	{
 		public.POST("/register", handlers.User.Register)
 		public.POST("/login", handlers.User.Login)
+		// WebSocket连接
+		public.GET("/ws", handlers.Chat.HandleWebSocket)
 	}
 
 	// 需要认证的路由
@@ -27,9 +29,6 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		// 好友相关路由
 		authorized.POST("/friendship/request", handlers.Friendship.SendRequest)
 		authorized.GET("/friendship/list", handlers.Friendship.GetFriendsList)
-
-		// WebSocket连接
-		authorized.GET("/ws", handlers.Chat.HandleWebSocket)
 
 		// 聊天相关
 		authorized.POST("/chat/message", handlers.Chat.SendMessage)

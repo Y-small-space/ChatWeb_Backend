@@ -7,9 +7,13 @@ import (
 	"net/http"
 	"time"
 
+	"chatweb/internal/model"
 	"chatweb/internal/service"
 
+	"chatweb/internal/repository"
+
 	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -32,18 +36,23 @@ const (
 // 负责管理连接、读取和发送消息
 
 type Client struct {
-	hub           *Hub                   // WebSocket 集线器
-	conn          *websocket.Conn        // WebSocket 连接实例
-	send          chan []byte            // 发送消息的通道
-	id            string                 // 客户端的用户 ID
-	onlineService *service.OnlineService // 在线状态服务
+	hub            *Hub                    // WebSocket 集线器
+	conn           *websocket.Conn         // WebSocket 连接实例
+	send           chan []byte             // 发送消息的通道
+	id             string                  // 客户端的用户 ID
+	onlineService  *service.OnlineService  // 在线状态服务
+	messageService *service.MessageService // 消息服务
 }
+type MessageType string
 
 // Message 结构体用于解析 WebSocket 消息
-
 type Message struct {
-	Type    string      `json:"type"`    // 消息类型
-	Content interface{} `json:"content"` // 消息内容
+	Type       MessageType        `bson:"type" json:"type"`                             // 消息类型（文本、图片、文件）
+	Content    string             `bson:"content" json:"content"`                       // 消息内容
+	SenderID   primitive.ObjectID `bson:"sender_id" json:"sender_id"`                   // 发送者的用户 ID
+	ReceiverID primitive.ObjectID `bson:"receiver_id" json:"receiver_id"`               // 接收者的用户 ID
+	GroupID    primitive.ObjectID `bson:"group_id,omitempty" json:"group_id,omitempty"` // 群组 ID（如果是群消息）
+	CreatedAt  time.Time          `bson:"created_at" json:"created_at"`                 // 消息发送时间
 }
 
 // OnlineStatusMessage 结构体用于用户在线状态的消息
@@ -124,7 +133,6 @@ func (c *Client) ReadPump() {
 			log.Printf("error unmarshaling message: %v", err)
 			continue
 		}
-
 		// 处理不同类型的消息
 		c.handleMessage(msg)
 	}
@@ -169,14 +177,7 @@ func (c *Client) WritePump() {
 
 // 处理不同类型的 WebSocket 消息
 func (c *Client) handleMessage(msg Message) {
-	switch msg.Type {
-	case MessageTypeChat:
-		c.handleChatMessage(msg)
-	case MessageTypeTyping:
-		c.handleTypingStatus(msg)
-	case MessageTypeNotification:
-		c.handleNotification(msg)
-	}
+	c.handleChatMessage(msg)
 }
 
 // 处理聊天消息，广播给所有客户端
@@ -186,25 +187,79 @@ func (c *Client) handleChatMessage(msg Message) {
 		log.Printf("error marshaling message: %v", err)
 		return
 	}
-	c.hub.broadcast <- messageBytes
+	log.Printf(msg.Content, msg.SenderID)
+	log.Printf("hanleChatMessage: %v", msg)
+
+	// 构建消息对象
+	message := &model.Message{
+		Type:       model.MessageType(msg.Type),
+		Content:    msg.Content,
+		SenderID:   msg.SenderID,
+		ReceiverID: msg.ReceiverID,
+		Status:     "sent",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if msg.GroupID.String() != "" {
+		message.GroupID = msg.GroupID
+	}
+
+	// 保存消息到数据库（异步执行，不阻塞 WebSocket）
+	// go func() {
+	// 	// 假设你有一个 MessageService 实例作为数据库操作服务
+	// 	if err := c.messageService.CreateMessage(context.Background(), message); err != nil {
+	// 		log.Printf("Failed to insert message into DB: %v", err)
+	// 	}
+	// }()
+
+	repository.NewMessageRepository().Create(context.Background(), message)
+
+	// 如果有接收者ID，发送给目标客户端
+	if msg.ReceiverID.String() != "" {
+		log.Println(c.hub.clients)
+		log.Println(msg.ReceiverID)
+		log.Println(msg.ReceiverID.Hex())
+		id := msg.ReceiverID.Hex()
+		recipientClient, ok := c.hub.clients[id]
+		if ok {
+			recipientClient.send <- messageBytes
+		} else {
+			log.Printf("Recipient %s not found", msg.ReceiverID.String())
+		}
+	} else if msg.GroupID.String() != "" {
+		// 如果有群组ID，发送给群组内所有客户端
+		for _, client := range c.hub.clients {
+			if client.id == c.id {
+				continue
+			}
+			if client.id == c.id {
+				continue
+			}
+			client.send <- messageBytes
+		}
+	} else {
+		// 否则广播给所有客户端
+		c.hub.broadcast <- messageBytes
+	}
 }
 
 // 处理用户输入状态
-func (c *Client) handleTypingStatus(msg Message) {
-	messageBytes, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("error marshaling typing status: %v", err)
-		return
-	}
-	c.hub.broadcast <- messageBytes
-}
+// func (c *Client) handleTypingStatus(msg Message) {
+// 	messageBytes, err := json.Marshal(msg)
+// 	if err != nil {
+// 		log.Printf("error marshaling typing status: %v", err)
+// 		return
+// 	}
+// 	c.hub.broadcast <- messageBytes
+// }
 
 // 处理通知消息
-func (c *Client) handleNotification(msg Message) {
-	messageBytes, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("error marshaling notification: %v", err)
-		return
-	}
-	c.hub.broadcast <- messageBytes
-}
+// func (c *Client) handleNotification(msg Message) {
+// 	messageBytes, err := json.Marshal(msg)
+// 	if err != nil {
+// 		log.Printf("error marshaling notification: %v", err)
+// 		return
+// 	}
+// 	c.hub.broadcast <- messageBytes
+// }

@@ -20,7 +20,7 @@ type ChatHandler struct {
 	notificationService *service.NotificationService // 通知服务
 	groupService        *service.GroupService        // 群组服务
 	onlineService       *service.OnlineService       // 在线状态服务
-	wsHub               *websocketM.Hub               // WebSocket Hub
+	wsHub               *websocketM.Hub              // WebSocket Hub
 	upgrader            websocket.Upgrader           // WebSocket 升级器
 }
 
@@ -50,11 +50,14 @@ func NewChatHandler(
 
 // HandleWebSocket 处理 WebSocket 连接的建立和消息处理
 func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
-	userID := c.GetString("userID")
+	log.Println("WebSocket connection established")
+	userID := c.DefaultQuery("userId", "")
+	log.Println(userID)
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
+	log.Printf("User %s connected via WebSocket", userID)
 
 	// 升级 HTTP 连接为 WebSocket 连接
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -67,10 +70,7 @@ func (h *ChatHandler) HandleWebSocket(c *gin.Context) {
 	client := websocketM.NewClient(h.wsHub, conn, userID, h.onlineService)
 	h.wsHub.Register(client)
 
-	// 设置用户为在线状态
-	// if err := h.onlineService.SetUserOnline(c.Request.Context(), userID); err != nil {
-	// 	log.Printf("Failed to set user online: %v", err)
-	// }
+	log.Printf("User %s connected", userID)
 
 	// 启动客户端的读写协程
 	go client.WritePump()
@@ -114,74 +114,67 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	// 设置接收方（个人或群组）
-	if req.GroupID != "" {
-		groupObjID, err := primitive.ObjectIDFromHex(req.GroupID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-			return
-		}
-		message.GroupID = groupObjID
-	} else if req.ReceiverID != "" {
-		receiverObjID, err := primitive.ObjectIDFromHex(req.ReceiverID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid receiver ID"})
-			return
-		}
-		message.ReceiverID = receiverObjID
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Either receiver_id or group_id is required"})
-		return
-	}
-
 	// 保存消息
 	if err := h.messageService.CreateMessage(c.Request.Context(), message); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// 返回消息
-	c.JSON(http.StatusOK, gin.H{"message": message})
 }
 
 // GetMessages 获取消息
-func (h *ChatHandler) GetMessages(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
+// func (h *ChatHandler) GetMessages(c *gin.Context) {
+// 	userID := c.GetString("userID")
+// 	if userID == "" {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+// 		return
+// 	}
+
+// 	var query struct {
+// 		ReceiverID string `form:"receiver_id"` // 接收者 ID
+// 		GroupID    string `form:"group_id"`    // 群组 ID
+// 		Limit      int    `form:"limit,default=20"`
+// 		Offset     int    `form:"offset,default=0"`
+// 	}
+
+// 	if err := c.ShouldBindQuery(&query); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	var messages []*model.Message
+// 	var err error
+// 	// 根据查询参数选择不同的消息获取方法
+// 	if query.GroupID != "" {
+// 		messages, err = h.messageService.GetGroupMessages(c.Request.Context(), query.GroupID, query.Limit, query.Offset)
+// 	} else if query.ReceiverID != "" {
+// 		messages, err = h.messageService.GetUserMessages(c.Request.Context(), userID, query.ReceiverID, query.Limit, query.Offset)
+// 	} else {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Either receiver_id or group_id is required"})
+// 		return
+// 	}
+
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// 返回消息列表
+// 	c.JSON(http.StatusOK, gin.H{"messages": messages})
+// }
+
+func (h *ChatHandler) getAllLastMessages(c *gin.Context) {
+	userId := c.GetString("userId")
+
+	if userId != "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	var query struct {
-		ReceiverID string `form:"receiver_id"` // 接收者 ID
-		GroupID    string `form:"group_id"`    // 群组 ID
-		Limit      int    `form:"limit,default=20"`
-		Offset     int    `form:"offset,default=0"`
-	}
-
-	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var messages []*model.Message
-	var err error
-
-	// 根据查询参数选择不同的消息获取方法
-	if query.GroupID != "" {
-		messages, err = h.messageService.GetGroupMessages(c.Request.Context(), query.GroupID, query.Limit, query.Offset)
-	} else if query.ReceiverID != "" {
-		messages, err = h.messageService.GetUserMessages(c.Request.Context(), userID, query.ReceiverID, query.Limit, query.Offset)
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Either receiver_id or group_id is required"})
-		return
-	}
-
+	messages, err := h.messageService.GetAllLastMessages(c.Request.Context(), userId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 返回消息列表
 	c.JSON(http.StatusOK, gin.H{"messages": messages})
 }
