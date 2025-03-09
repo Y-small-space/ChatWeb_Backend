@@ -163,9 +163,28 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 // }
 
 func (h *ChatHandler) getAllLastMessages(c *gin.Context) {
-	userId := c.GetString("userId")
+	var requestBody struct {
+		UserID string `json:"userId"` // 解析 JSON 请求体中的 userId
+	}
 
-	if userId != "" {
+	// 解析 JSON 数据
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// 确保 userId 不是空的
+	if requestBody.UserID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "UserID is required"})
+		return
+	}
+
+	// 输出 userId（测试）
+	log.Printf("Received userId: %s", requestBody.UserID)
+
+	userId := requestBody.UserID
+
+	if userId == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}

@@ -21,11 +21,14 @@ type Message struct {
 	Content    string             `bson:"content" json:"content"`                       // 消息内容
 	SenderID   primitive.ObjectID `bson:"sender_id" json:"sender_id"`                   // 发送者的用户 ID
 	ReceiverID primitive.ObjectID `bson:"receiver_id" json:"receiver_id"`               // 接收者的用户 ID
+	Sender     string             `bson:"sender" json:"sender"`                         // 发送者 name
+	Receiver   string             `bson:"receiver" json:"receiverer"`                   // 接收者 name
 	GroupID    primitive.ObjectID `bson:"group_id,omitempty" json:"group_id,omitempty"` // 群组 ID（如果是群消息）
 	CreatedAt  time.Time          `bson:"created_at" json:"created_at"`                 // 消息发送时间
 	UpdatedAt  time.Time          `bson:"updated_at" json:"updated_at"`                 // 消息更新时间
 	Status     string             `bson:"status" json:"status"`                         // 消息状态（sent, delivered, read）
 	ReadBy     []ReadReceipt      `bson:"read_by" json:"read_by"`                       // 读取消息的用户列表
+	// Transfrom  string
 }
 
 // ReadReceipt 定义消息已读回执

@@ -69,6 +69,15 @@ func (s *MessageService) GetUserMessages(ctx context.Context, userID string, oth
 	return s.messageRepo.GetMessages(ctx, filter, limit, offset) // 查询消息
 }
 
+func (s *MessageService) GetAllLastMessages(ctx context.Context, userID string) ([]*model.Message, error) {
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.messageRepo.GetAllLastMessages(ctx, userObjID)
+
+}
 
 // GetGroupMessages 获取群组消息
 func (s *MessageService) GetGroupMessages(ctx context.Context, groupID string, limit, offset int) ([]*model.Message, error) {

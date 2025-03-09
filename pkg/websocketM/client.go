@@ -53,6 +53,8 @@ type Message struct {
 	ReceiverID primitive.ObjectID `bson:"receiver_id" json:"receiver_id"`               // 接收者的用户 ID
 	GroupID    primitive.ObjectID `bson:"group_id,omitempty" json:"group_id,omitempty"` // 群组 ID（如果是群消息）
 	CreatedAt  time.Time          `bson:"created_at" json:"created_at"`                 // 消息发送时间
+	Sender     string             `bson:"sender" json:"sender"`                         // 发送者 name
+	Receiver   string             `bson:"receiver" json:"receiver"`                     // 接收者 name
 }
 
 // OnlineStatusMessage 结构体用于用户在线状态的消息
@@ -196,6 +198,8 @@ func (c *Client) handleChatMessage(msg Message) {
 		Content:    msg.Content,
 		SenderID:   msg.SenderID,
 		ReceiverID: msg.ReceiverID,
+		Sender:     msg.Sender,
+		Receiver:   msg.Receiver,
 		Status:     "sent",
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),

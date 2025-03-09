@@ -59,6 +59,58 @@ func (r *MessageRepository) GetMessages(ctx context.Context, filter bson.M, limi
 	return messages, nil
 }
 
+func (r *MessageRepository) GetAllLastMessages(ctx context.Context, userId primitive.ObjectID) ([]*model.Message, error) {
+	var messages []*model.Message
+
+	// 1. 过滤当前用户相关的消息
+	matchStage := bson.D{
+		{Key: "$match", Value: bson.D{
+			{Key: "$or", Value: bson.A{
+				bson.D{{Key: "sender_id", Value: userId}},
+				bson.D{{Key: "receiver_id", Value: userId}},
+			}},
+		}},
+	}
+
+	// 2. 按聊天对象分组，取最新一条消息
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "$cond", Value: bson.D{
+					{Key: "if", Value: bson.D{{Key: "$eq", Value: bson.A{"$sender_id", userId}}}},
+					{Key: "then", Value: "$receiver_id"},
+					{Key: "else", Value: "$sender_id"},
+				}},
+			}},
+			{Key: "lastMessage", Value: bson.D{{Key: "$last", Value: "$$ROOT"}}}, // 取最新一条
+		}},
+	}
+
+	// 3. 只保留 lastMessage 字段
+	projectStage := bson.D{
+		{Key: "$replaceRoot", Value: bson.D{{Key: "newRoot", Value: "$lastMessage"}}},
+	}
+
+	// 4. 按时间倒序排序
+	sortStage := bson.D{
+		{Key: "$sort", Value: bson.D{{"created_at", -1}}},
+	}
+
+	// 执行聚合查询
+	cursor, err := r.collection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage, sortStage})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// 解析查询结果
+	if err = cursor.All(ctx, &messages); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
 func (r *MessageRepository) UpdateStatus(ctx context.Context, messageID primitive.ObjectID, status string) error {
 	update := bson.M{
 		"$set": bson.M{

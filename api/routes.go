@@ -23,7 +23,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 	{
 		// 用户相关
 		authorized.GET("/user/profile", handlers.User.GetProfile)
-		authorized.PUT("/user/profile", handlers.User.UpdateProfile)
+		authorized.PUT("/user/updateprofile", handlers.User.UpdateProfile)
 		authorized.GET("/user/search", handlers.User.SearchUser)
 
 		// 好友相关路由
@@ -32,12 +32,13 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 
 		// 聊天相关
 		authorized.POST("/chat/message", handlers.Chat.SendMessage)
-		authorized.GET("/chat/messages", handlers.Chat.GetMessages)
-		// authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
-		// authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)
-		// authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
-		// authorized.GET("/groups/:group_id/messages/unread", handlers.Message.GetGroupUnreadMessages)
-		// authorized.PUT("/groups/messages/:id/read", handlers.Message.MarkGroupMessageAsRead)
+		authorized.POST("/chat/getAllLastMessages", handlers.Chat.getAllLastMessages)
+		// authorized.GET("/chat/messages", handlers.Chat.GetMessages)
+		authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
+		authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)
+		authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
+		authorized.GET("/groups/:group_id/messages/unread", handlers.Message.GetGroupUnreadMessages)
+		authorized.PUT("/groups/messages/:id/read", handlers.Message.MarkGroupMessageAsRead)
 
 		// 群聊相关
 		authorized.POST("/group", handlers.Group.Create)
