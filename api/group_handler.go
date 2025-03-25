@@ -3,6 +3,7 @@ package api
 import (
 	"chatweb/internal/model"
 	"chatweb/internal/service"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,12 +14,14 @@ import (
 type GroupHandler struct {
 	// 服务层，用于处理与群组相关的业务逻辑
 	groupService *service.GroupService
+	userService  *service.UserService // 引入用户服务
 }
 
 // NewGroupHandler 构造函数，初始化 GroupHandler
-func NewGroupHandler(groupService *service.GroupService) *GroupHandler {
+func NewGroupHandler(groupService *service.GroupService, userService *service.UserService) *GroupHandler {
 	return &GroupHandler{
 		groupService: groupService,
+		userService:  userService,
 	}
 }
 
@@ -50,6 +53,15 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
+	log.Print("userId:", userID)
+
+	user, err := h.userService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		log.Print(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	log.Print("user:", user)
 
 	// 创建群组对象
 	group := &model.Group{
@@ -128,28 +140,41 @@ func (h *GroupHandler) Get(c *gin.Context) {
 
 // Join 处理用户加入指定群组的请求
 func (h *GroupHandler) Join(c *gin.Context) {
-	// 获取当前用户的 ID，确保用户已认证
-	userID := c.GetString("userID")
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	// 定义请求结构
+	var req struct {
+		GroupID string   `json:"group_id" binding:"required"`
+		UserIDs []string `json:"user_ids" binding:"required"`
+	}
+
+	// 解析 JSON 请求体
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
-	// 从 URL 参数获取群组 ID
-	groupID := c.Param("id")
-	if groupID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Group ID is required"})
+	GroupID := req.GroupID
+	UserIDs := req.UserIDs
+
+	// 遍历用户列表，逐个加入群组
+	var failedUsers []string
+	for _, userID := range UserIDs {
+		if err := h.groupService.JoinGroup(c.Request.Context(), GroupID, userID); err != nil {
+			failedUsers = append(failedUsers, userID) // 记录失败的用户 ID
+		}
+	}
+
+	// 返回批量加入结果
+	if len(failedUsers) > 0 {
+		c.JSON(http.StatusPartialContent, gin.H{
+			"message":       "Some users failed to join",
+			"failed_users":  failedUsers,
+			"success_count": len(req.UserIDs) - len(failedUsers),
+		})
 		return
 	}
 
-	// 调用服务层方法加入群组
-	if err := h.groupService.JoinGroup(c.Request.Context(), groupID, userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 返回成功加入群组的消息
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully joined the group"})
+	// 全部成功
+	c.JSON(http.StatusOK, gin.H{"message": "All users successfully joined the group"})
 }
 
 // Leave 处理用户离开指定群组的请求

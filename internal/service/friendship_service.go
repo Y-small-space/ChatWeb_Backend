@@ -5,6 +5,7 @@ import (
 	"chatweb/internal/repository"
 	"context"
 	"errors"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -106,4 +107,42 @@ func (s *FriendshipService) GetFriendsList(ctx context.Context, userID string) (
 
 	// 返回好友列表
 	return friends, nil
+}
+
+// DeleteFriend 删除好友
+func (s *FriendshipService) DeleteFriend(ctx context.Context, friendId string, userId string) error {
+	log.Print("delete")
+	log.Print("user", friendId)
+	// 将用户和好友的字符串 ID 转换为 ObjectID
+	userObjID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return errors.New("invalid user ID")
+	}
+	friendObjID, err := primitive.ObjectIDFromHex(friendId)
+	if err != nil {
+		return errors.New("invalid friend ID")
+	}
+	// 检查好友关系是否存在
+	friendships, err := s.friendshipRepo.GetFriendsList(ctx, userObjID)
+	if err != nil {
+		return err
+	}
+	found := false
+	for _, f := range friendships {
+		if (f.UserID == userObjID && f.FriendID == friendObjID) ||
+			(f.UserID == friendObjID && f.FriendID == userObjID) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.New("friend relationship not found")
+	}
+	// 从数据库中删除好友关系
+	err = s.friendshipRepo.Delete(ctx, userObjID, friendObjID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -121,46 +121,33 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 	}
 }
 
-// GetMessages 获取消息
-// func (h *ChatHandler) GetMessages(c *gin.Context) {
-// 	userID := c.GetString("userID")
-// 	if userID == "" {
-// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-// 		return
-// 	}
+// getMessagesById 根据userID获取与当前用户的所有消息
+func (h *ChatHandler) getMessagesById(c *gin.Context) {
+	var requestBody struct {
+		UserID  string `json:"userId"`  // 解析 JSON 请求体中的 userId
+		OtherID string `json:"otherId"` // 解析
+	}
 
-// 	var query struct {
-// 		ReceiverID string `form:"receiver_id"` // 接收者 ID
-// 		GroupID    string `form:"group_id"`    // 群组 ID
-// 		Limit      int    `form:"limit,default=20"`
-// 		Offset     int    `form:"offset,default=0"`
-// 	}
+	// 解析 JSON 数据
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
 
-// 	if err := c.ShouldBindQuery(&query); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	userId := requestBody.UserID
+	otherId := requestBody.OtherID
 
-// 	var messages []*model.Message
-// 	var err error
-// 	// 根据查询参数选择不同的消息获取方法
-// 	if query.GroupID != "" {
-// 		messages, err = h.messageService.GetGroupMessages(c.Request.Context(), query.GroupID, query.Limit, query.Offset)
-// 	} else if query.ReceiverID != "" {
-// 		messages, err = h.messageService.GetUserMessages(c.Request.Context(), userID, query.ReceiverID, query.Limit, query.Offset)
-// 	} else {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Either receiver_id or group_id is required"})
-// 		return
-// 	}
+	log.Println("userId", userId, "otherId", otherId)
 
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
+	messages, err := h.messageService.GetMessagesById(c.Request.Context(), userId, otherId)
 
-// 	// 返回消息列表
-// 	c.JSON(http.StatusOK, gin.H{"messages": messages})
-// }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"messages": messages})
+}
 
 func (h *ChatHandler) getAllLastMessages(c *gin.Context) {
 	var requestBody struct {

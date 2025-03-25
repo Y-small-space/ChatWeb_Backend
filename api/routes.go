@@ -25,15 +25,17 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		authorized.GET("/user/profile", handlers.User.GetProfile)
 		authorized.PUT("/user/updateprofile", handlers.User.UpdateProfile)
 		authorized.GET("/user/search", handlers.User.SearchUser)
+		authorized.POST("/user/getUsersByIDs", handlers.User.GetUsersByIDs)
 
 		// 好友相关路由
 		authorized.POST("/friendship/request", handlers.Friendship.SendRequest)
 		authorized.GET("/friendship/list", handlers.Friendship.GetFriendsList)
+		authorized.POST("/friendship/delete", handlers.Friendship.DeleteFriend)
 
 		// 聊天相关
 		authorized.POST("/chat/message", handlers.Chat.SendMessage)
 		authorized.POST("/chat/getAllLastMessages", handlers.Chat.getAllLastMessages)
-		// authorized.GET("/chat/messages", handlers.Chat.GetMessages)
+		authorized.POST("/chat/getMessagesById", handlers.Chat.getMessagesById)
 		authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
 		authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)
 		authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
@@ -45,7 +47,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		authorized.GET("/groups", handlers.Group.List)
 
 		authorized.GET("/group/:id", handlers.Group.Get)
-		authorized.POST("/group/:id/join", handlers.Group.Join)
+		authorized.POST("/group/join", handlers.Group.Join)
 		authorized.POST("/group/:id/leave", handlers.Group.Leave)
 
 		// 文件相关路由

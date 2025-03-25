@@ -75,3 +75,21 @@ func (h *FriendshipHandler) GetFriendsList(c *gin.Context) {
 		},
 	})
 }
+
+// DeteleFriend 删除好友
+func (h *FriendshipHandler) DeleteFriend(c *gin.Context) {
+	var req struct {
+		UserID   string `json:"user_id" binding:"required"`
+		FriendID string `json:"friend_id" binding:"required"` // 目标好友的用户ID
+	}
+	// 绑定请求数据，如果出现错误则返回 400 错误
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	h.friendshipService.DeleteFriend(c.Request.Context(), req.FriendID, req.UserID)
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "ok",
+	})
+}

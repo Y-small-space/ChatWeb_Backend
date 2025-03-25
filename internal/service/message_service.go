@@ -32,14 +32,13 @@ func NewMessageService(messageRepo *repository.MessageRepository, readCache *Rea
 
 // CreateMessage 创建一条消息
 func (s *MessageService) CreateMessage(ctx context.Context, message *model.Message) error {
-	// log.Printf("message123", message)
 	log.Println("CreateMessage 创建一条消息")
 	log.Printf(message.Content)
 	return s.messageRepo.Create(ctx, message) // 将消息存入数据库
 }
 
 // GetUserMessages 获取用户与另一个用户的消息
-func (s *MessageService) GetUserMessages(ctx context.Context, userID string, otherUserID string, limit, offset int) ([]*model.Message, error) {
+func (s *MessageService) GetMessagesById(ctx context.Context, userID string, otherUserID string) ([]*model.Message, error) {
 	// 将用户ID和另一个用户ID转换为 ObjectID
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
@@ -66,9 +65,10 @@ func (s *MessageService) GetUserMessages(ctx context.Context, userID string, oth
 		"group_id": nil, // 排除群组消息
 	}
 
-	return s.messageRepo.GetMessages(ctx, filter, limit, offset) // 查询消息
+	return s.messageRepo.GetMessages(ctx, filter) // 查询消息
 }
 
+// GetAllLastMessages 获取所有用户的最后一条消息
 func (s *MessageService) GetAllLastMessages(ctx context.Context, userID string) ([]*model.Message, error) {
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
@@ -76,7 +76,6 @@ func (s *MessageService) GetAllLastMessages(ctx context.Context, userID string) 
 	}
 
 	return s.messageRepo.GetAllLastMessages(ctx, userObjID)
-
 }
 
 // GetGroupMessages 获取群组消息
@@ -89,7 +88,7 @@ func (s *MessageService) GetGroupMessages(ctx context.Context, groupID string, l
 
 	// 设置查询条件，查找指定群组的消息
 	filter := bson.M{"group_id": groupObjID}
-	return s.messageRepo.GetMessages(ctx, filter, limit, offset) // 查询群组消息
+	return s.messageRepo.GetMessages(ctx, filter) // 查询群组消息
 }
 
 // UpdateMessageStatus 更新消息状态

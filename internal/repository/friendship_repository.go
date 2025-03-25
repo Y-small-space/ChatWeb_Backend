@@ -4,6 +4,7 @@ import (
 	"chatweb/internal/model"              // 引入数据模型
 	"chatweb/internal/repository/mongodb" // 引入 MongoDB 相关的代码
 	"context"
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -65,4 +66,24 @@ func (r *FriendshipRepository) GetFriendsList(ctx context.Context, userID primit
 
 	// 返回用户的所有好友关系
 	return friendships, nil
+}
+
+func (r *FriendshipRepository) Delete(ctx context.Context, userID, friendID primitive.ObjectID) error {
+	filter := bson.M{
+		"$or": []bson.M{
+			{"user_id": userID, "friend_id": friendID},
+			{"user_id": friendID, "friend_id": userID},
+		},
+	}
+
+	result, err := r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return errors.New("friendship not found")
+	}
+
+	return nil
 }

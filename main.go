@@ -61,7 +61,7 @@ func main() {
 	// 初始化处理器
 	userHandler := api.NewUserHandler(userService)
 	chatHandler := api.NewChatHandler(messageService, notificationService, groupService, onlineService, eventBus)
-	groupHandler := api.NewGroupHandler(groupService)
+	groupHandler := api.NewGroupHandler(groupService, userService)
 	fileHandler := api.NewFileHandler(fileService)
 	notificationHandler := api.NewNotificationHandler(notificationService)
 	onlineHandler := api.NewOnlineHandler(onlineService)

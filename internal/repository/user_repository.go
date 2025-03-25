@@ -5,6 +5,7 @@ import (
 	"chatweb/internal/repository/mongodb"
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -54,6 +55,7 @@ func (r *UserRepository) FindByPhone(ctx context.Context, phone string) (*model.
 }
 
 func (r *UserRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*model.User, error) {
+	log.Print("findByiD", id)
 	var user model.User
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
 	if err != nil {
@@ -92,4 +94,35 @@ func (r *UserRepository) SearchUserByIdentifier(ctx context.Context, identifier 
 	}
 
 	return &user, nil
+}
+
+// FindByIDs 批量查询用户信息
+func (r *UserRepository) FindByIDs(ctx context.Context, ids []primitive.ObjectID) ([]*model.User, error) {
+	var users []*model.User
+
+	log.Print("ids", ids)
+	// 查询条件：用户 ID 在给定的 ID 列表中
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+
+	// 执行数据库查询
+	cursor, err := r.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// 解析查询结果
+	for cursor.Next(ctx) {
+		var user model.User
+		if err := cursor.Decode(&user); err != nil {
+			continue
+		}
+		users = append(users, &user)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

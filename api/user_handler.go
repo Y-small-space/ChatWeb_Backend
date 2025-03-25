@@ -119,6 +119,40 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// GetProfile：根据一组id获取这些人的资料
+// GetUsersByIDs 批量获取用户信息
+func (h *UserHandler) GetUsersByIDs(c *gin.Context) {
+	// 解析请求体
+	var req struct {
+		UserIDs []string `json:"user_ids" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		return
+	}
+
+	// 调用服务层获取用户信息
+	users, failedIDs, err := h.userService.GetUsersByIDs(c.Request.Context(), req.UserIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 返回批量查询结果
+	if len(failedIDs) > 0 {
+		c.JSON(http.StatusPartialContent, gin.H{
+			"message":       "Some users not found",
+			"users":         users,
+			"failed_ids":    failedIDs,
+			"success_count": len(users),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": users})
+}
+
 // UpdateProfile：更新用户的个人资料
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID := c.GetString("userID")

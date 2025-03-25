@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -75,10 +76,12 @@ func (s *UserService) Login(ctx context.Context, email, password string) (string
 
 // GetUserByID 根据用户ID获取用户信息
 func (s *UserService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	log.Print("userId:", userID)
 	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, err // 如果ID格式无效，返回错误
 	}
+	log.Print("objId", objID)
 	return s.userRepo.FindByID(ctx, objID) // 从数据库中获取用户信息
 }
 
@@ -94,4 +97,46 @@ func (s *UserService) UpdateUser(ctx context.Context, userID string, updates map
 // SearchUser 根据标识符（邮箱或手机号）查找用户
 func (s *UserService) SearchUser(ctx context.Context, identifier string) (*model.User, error) {
 	return s.userRepo.SearchUserByIdentifier(ctx, identifier) // 根据标识符查找用户
+}
+
+// GetUsersByIDs 通过一组 ID 获取多个用户信息
+func (s *UserService) GetUsersByIDs(ctx context.Context, userIDs []string) ([]*model.User, []string, error) {
+	var objectIDs []primitive.ObjectID
+	var failedIDs []string
+
+	// 将字符串 ID 转换为 ObjectID
+	for _, id := range userIDs {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			failedIDs = append(failedIDs, id) // 记录转换失败的 ID
+			continue
+		}
+		objectIDs = append(objectIDs, objID)
+	}
+
+	// 如果所有 ID 都无效，则直接返回错误
+	if len(objectIDs) == 0 {
+		return nil, failedIDs, errors.New("no valid user IDs provided")
+	}
+
+	// 从数据库中批量查询用户信息
+	users, err := s.userRepo.FindByIDs(ctx, objectIDs)
+	if err != nil {
+		return nil, failedIDs, err
+	}
+
+	// 确保所有请求的用户 ID 都匹配返回的数据
+	foundIDs := make(map[string]bool)
+	for _, user := range users {
+		foundIDs[user.ID.Hex()] = true
+	}
+
+	// 检查哪些 ID 没有找到
+	for _, id := range userIDs {
+		if !foundIDs[id] {
+			failedIDs = append(failedIDs, id)
+		}
+	}
+
+	return users, failedIDs, nil
 }

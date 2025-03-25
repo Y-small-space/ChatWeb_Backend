@@ -39,11 +39,9 @@ func (r *MessageRepository) Create(ctx context.Context, message *model.Message) 
 	return nil
 }
 
-func (r *MessageRepository) GetMessages(ctx context.Context, filter bson.M, limit, offset int) ([]*model.Message, error) {
+func (r *MessageRepository) GetMessages(ctx context.Context, filter bson.M) ([]*model.Message, error) {
 	opts := options.Find().
-		SetSort(bson.D{{Key: "created_at", Value: -1}}).
-		SetSkip(int64(offset)).
-		SetLimit(int64(limit))
+		SetSort(bson.D{{Key: "created_at", Value: 1}})
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
