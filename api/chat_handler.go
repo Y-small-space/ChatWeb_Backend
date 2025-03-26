@@ -184,3 +184,30 @@ func (h *ChatHandler) getAllLastMessages(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"messages": messages})
 }
+
+// getGroupMessages 获取群组聊天记录
+func (h *ChatHandler) getGroupMessages(c *gin.Context) {
+	var requestBody struct {
+		GroupID string `json:"groupId"` // 解析 JSON 请求体中的 groupId
+	}
+
+	// 解析 JSON 数据
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	groupId := requestBody.GroupID
+
+	log.Println("groupId:", groupId)
+
+	// 调用服务层获取群聊记录
+	messages, err := h.messageService.GetGroupMessages(c.Request.Context(), groupId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 返回查询到的消息
+	c.JSON(http.StatusOK, gin.H{"messages": messages})
+}

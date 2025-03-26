@@ -3,10 +3,18 @@ package api
 import (
 	"chatweb/internal/model"   // 引入模型层
 	"chatweb/internal/service" // 引入服务层
-	"net/http"                 // HTTP 状态码
+	"io"
+	"net/http" // HTTP 状态码
 
 	"github.com/gin-gonic/gin" // Gin 框架
 )
+
+// 允许的图片格式
+var allowedExtensions = map[string]bool{
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+}
 
 // UserHandler：处理与用户相关的 API 请求
 type UserHandler struct {
@@ -217,4 +225,38 @@ func (h *UserHandler) SearchUser(c *gin.Context) {
 			"user": user,
 		},
 	})
+}
+
+// 处理头像上传
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	userID := c.PostForm("userId") // 👈 现在可以正常获取
+
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userId is required"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No file uploaded"})
+		return
+	}
+	defer file.Close()
+
+	// 读取文件数据
+	fileData, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+		return
+	}
+
+	// 处理头像上传
+	fileURL, err := h.userService.UploadAvatar(c.Request.Context(), userID, header.Filename, fileData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 返回头像 URL
+	c.JSON(http.StatusOK, gin.H{"url": fileURL, "message": "Avatar updated successfully"})
 }

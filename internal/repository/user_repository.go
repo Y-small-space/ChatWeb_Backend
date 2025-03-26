@@ -126,3 +126,20 @@ func (r *UserRepository) FindByIDs(ctx context.Context, ids []primitive.ObjectID
 
 	return users, nil
 }
+
+// UpdateUserAvatar 更新用户头像 URL
+func (r *UserRepository) UpdateUserAvatar(ctx context.Context, userID string, avatarURL string) error {
+	log.Print("userId", userID)
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		log.Print("err", err)
+		return err
+	}
+
+	log.Print("objID", objID)
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": bson.M{"avatar": avatarURL, "updated_at": time.Now()}}
+
+	_, err = r.collection.UpdateOne(ctx, filter, update)
+	return err
+}

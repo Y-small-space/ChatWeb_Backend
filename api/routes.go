@@ -15,6 +15,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		public.POST("/login", handlers.User.Login)
 		// WebSocket连接
 		public.GET("/ws", handlers.Chat.HandleWebSocket)
+		public.POST("/user/uploadAvatar", handlers.User.UploadAvatar)
 	}
 
 	// 需要认证的路由
@@ -35,6 +36,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		// 聊天相关
 		authorized.POST("/chat/message", handlers.Chat.SendMessage)
 		authorized.POST("/chat/getAllLastMessages", handlers.Chat.getAllLastMessages)
+		authorized.POST("/chat/getGroupMessages", handlers.Chat.getGroupMessages)
 		authorized.POST("/chat/getMessagesById", handlers.Chat.getMessagesById)
 		authorized.PUT("/messages/:id/read", handlers.Message.MarkAsRead)
 		authorized.PUT("/messages/read", handlers.Message.MarkMultipleAsRead)

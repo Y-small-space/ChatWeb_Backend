@@ -72,6 +72,7 @@ func main() {
 
 	// 创建路由
 	r := gin.Default()
+	r.Static("/uploads", "./uploads")
 
 	// 添加全局中间件
 	r.Use(middleware.Cors())

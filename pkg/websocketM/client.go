@@ -209,18 +209,9 @@ func (c *Client) handleChatMessage(msg Message) {
 		message.GroupID = msg.GroupID
 	}
 
-	// 保存消息到数据库（异步执行，不阻塞 WebSocket）
-	// go func() {
-	// 	// 假设你有一个 MessageService 实例作为数据库操作服务
-	// 	if err := c.messageService.CreateMessage(context.Background(), message); err != nil {
-	// 		log.Printf("Failed to insert message into DB: %v", err)
-	// 	}
-	// }()
-
 	repository.NewMessageRepository().Create(context.Background(), message)
-
 	// 如果有接收者ID，发送给目标客户端
-	if msg.ReceiverID.String() != "" {
+	if msg.ReceiverID.String() != "" && msg.ReceiverID != primitive.NilObjectID {
 		log.Println(c.hub.clients)
 		log.Println(msg.ReceiverID)
 		log.Println(msg.ReceiverID.Hex())

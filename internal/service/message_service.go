@@ -79,7 +79,7 @@ func (s *MessageService) GetAllLastMessages(ctx context.Context, userID string) 
 }
 
 // GetGroupMessages 获取群组消息
-func (s *MessageService) GetGroupMessages(ctx context.Context, groupID string, limit, offset int) ([]*model.Message, error) {
+func (s *MessageService) GetGroupMessages(ctx context.Context, groupID string) ([]*model.Message, error) {
 	// 将群组ID转换为 ObjectID
 	groupObjID, err := primitive.ObjectIDFromHex(groupID)
 	if err != nil {

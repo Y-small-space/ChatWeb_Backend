@@ -8,6 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -139,4 +143,46 @@ func (s *UserService) GetUsersByIDs(ctx context.Context, userIDs []string) ([]*m
 	}
 
 	return users, failedIDs, nil
+}
+
+// 允许的图片扩展名
+var allowedExtensions = map[string]bool{
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+}
+
+// UploadAvatar 处理头像上传
+func (s *UserService) UploadAvatar(ctx context.Context, userID string, fileName string, fileData []byte) (string, error) {
+	// 检查扩展名
+	ext := strings.ToLower(filepath.Ext(fileName))
+	if !allowedExtensions[ext] {
+		return "", fmt.Errorf("only .jpg, .jpeg, .png files are allowed")
+	}
+
+	// 创建目录
+	uploadDir := "uploads/avatar"
+	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create upload directory")
+	}
+
+	// 生成唯一文件名
+	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	savePath := filepath.Join(uploadDir, newFileName)
+
+	// 写入文件
+	if err := os.WriteFile(savePath, fileData, 0644); err != nil {
+		return "", fmt.Errorf("failed to save file")
+	}
+
+	// 生成头像 URL
+	baseURL := "http://localhost:8080"
+	fileURL := fmt.Sprintf("%s/uploads/avatar/%s", baseURL, newFileName)
+
+	// 更新数据库
+	if err := s.userRepo.UpdateUserAvatar(ctx, userID, fileURL); err != nil {
+		return "", fmt.Errorf("failed to update user avatar: %v", err)
+	}
+
+	return fileURL, nil
 }
