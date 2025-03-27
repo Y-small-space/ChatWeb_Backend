@@ -37,6 +37,43 @@ func (s *MessageService) CreateMessage(ctx context.Context, message *model.Messa
 	return s.messageRepo.Create(ctx, message) // 将消息存入数据库
 }
 
+// DeleteMessageById 根据 userId, otherId 和 messageId 删除特定的消息
+func (s *MessageService) DeleteMessageById(ctx context.Context, userId, otherId, messageId string) ([]*model.Message, error) {
+	// 将用户ID和另一个用户ID转换为 ObjectID
+	userObjID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	otherUserObjID, err := primitive.ObjectIDFromHex(otherId)
+	if err != nil {
+		return nil, err
+	}
+	messageObjID, err := primitive.ObjectIDFromHex(messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	// 设置查询条件，查找两者之间的消息
+	filter := bson.M{
+		"$or": []bson.M{
+			{
+				"sender_id":   userObjID,
+				"receiver_id": otherUserObjID,
+				"_id":         messageObjID,
+			},
+			{
+				"sender_id":   otherUserObjID,
+				"receiver_id": userObjID,
+				"_id":         messageObjID,
+			},
+		},
+		"group_id": nil, // 排除群组消息
+	}
+
+	return nil, s.messageRepo.DeleteMessageById(ctx, filter)
+}
+
 // GetUserMessages 获取用户与另一个用户的消息
 func (s *MessageService) GetMessagesById(ctx context.Context, userID string, otherUserID string) ([]*model.Message, error) {
 	// 将用户ID和另一个用户ID转换为 ObjectID

@@ -104,6 +104,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 			"email":      user.Email,
 			"phone":      user.Phone,
 			"created_at": user.CreatedAt,
+			"avatar":     user.Avatar,
 		},
 	})
 }

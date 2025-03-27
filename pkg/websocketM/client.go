@@ -55,6 +55,7 @@ type Message struct {
 	CreatedAt  time.Time          `bson:"created_at" json:"created_at"`                 // 消息发送时间
 	Sender     string             `bson:"sender" json:"sender"`                         // 发送者 name
 	Receiver   string             `bson:"receiver" json:"receiver"`                     // 接收者 name
+	FileName   string             `bson:"filename" json:"filename"`                     // 文件名称
 }
 
 // OnlineStatusMessage 结构体用于用户在线状态的消息
@@ -200,6 +201,7 @@ func (c *Client) handleChatMessage(msg Message) {
 		ReceiverID: msg.ReceiverID,
 		Sender:     msg.Sender,
 		Receiver:   msg.Receiver,
+		FileName:   msg.FileName,
 		Status:     "sent",
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),

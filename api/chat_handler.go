@@ -211,3 +211,34 @@ func (h *ChatHandler) getGroupMessages(c *gin.Context) {
 	// 返回查询到的消息
 	c.JSON(http.StatusOK, gin.H{"messages": messages})
 }
+
+// deleteMessage 根据 userID, otherID 和 messageID 删除特定的聊天记录
+func (h *ChatHandler) deleteMessage(c *gin.Context) {
+	var requestBody struct {
+		UserID    string `json:"userId"`    // 解析 JSON 请求体中的 userId
+		OtherID   string `json:"otherId"`   // 解析 JSON 请求体中的 otherId
+		MessageID string `json:"messageId"` // 解析 JSON 请求体中的 messageId
+	}
+
+	// 解析 JSON 数据
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	userId := requestBody.UserID
+	otherId := requestBody.OtherID
+	messageId := requestBody.MessageID
+
+	log.Println("userId", userId, "otherId", otherId, "messageId", messageId)
+
+	// 调用服务层方法删除特定消息
+	_, err := h.messageService.DeleteMessageById(c.Request.Context(), userId, otherId, messageId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Message deleted successfully"})
+}

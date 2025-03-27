@@ -16,6 +16,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		// WebSocket连接
 		public.GET("/ws", handlers.Chat.HandleWebSocket)
 		public.POST("/user/uploadAvatar", handlers.User.UploadAvatar)
+		public.POST("/file/uploadFile", handlers.File.UploadFile)
 	}
 
 	// 需要认证的路由
@@ -43,6 +44,7 @@ func InitRoutes(r *gin.Engine, cfg *config.Config, handlers *Handlers) {
 		authorized.GET("/messages/unread", handlers.Message.GetUnreadMessages)
 		authorized.GET("/groups/:group_id/messages/unread", handlers.Message.GetGroupUnreadMessages)
 		authorized.PUT("/groups/messages/:id/read", handlers.Message.MarkGroupMessageAsRead)
+		authorized.POST("/messages/delete", handlers.Chat.deleteMessage)
 
 		// 群聊相关
 		authorized.POST("/group", handlers.Group.Create)

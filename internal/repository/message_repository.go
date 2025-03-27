@@ -109,6 +109,22 @@ func (r *MessageRepository) GetAllLastMessages(ctx context.Context, userId primi
 	return messages, nil
 }
 
+// DeleteMessageById 根据 userId, otherId 和 messageId 删除特定的消息
+func (r *MessageRepository) DeleteMessageById(ctx context.Context, filter bson.M) error {
+	// 删除消息
+	result, err := r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	// 如果没有删除任何记录，返回错误
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("message not found or you do not have permission to delete it")
+	}
+
+	return nil
+}
+
 func (r *MessageRepository) UpdateStatus(ctx context.Context, messageID primitive.ObjectID, status string) error {
 	update := bson.M{
 		"$set": bson.M{

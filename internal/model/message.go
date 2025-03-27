@@ -28,6 +28,7 @@ type Message struct {
 	UpdatedAt  time.Time          `bson:"updated_at" json:"updated_at"`       // 消息更新时间
 	Status     string             `bson:"status" json:"status"`               // 消息状态（sent, delivered, read）
 	ReadBy     []ReadReceipt      `bson:"read_by" json:"read_by"`             // 读取消息的用户列表
+	FileName   string             `bson:"filename" json:"filename"`           // 文件名称
 	// Transfrom  string
 }
 

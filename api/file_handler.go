@@ -2,8 +2,14 @@ package api
 
 import (
 	"chatweb/internal/service"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -119,4 +125,88 @@ func (h *FileHandler) Delete(c *gin.Context) {
 
 	// 删除成功，返回成功消息
 	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
+}
+
+func (h *FileHandler) UploadFile(c *gin.Context) {
+	log.Print("uploading...")
+
+	// 获取文件
+	file, fileHeader, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
+		return
+	}
+	defer file.Close()
+
+	// 获取文件类型和大小
+	fileType := fileHeader.Header.Get("Content-Type")
+	fileSize := fileHeader.Size
+
+	log.Print("fileType: ", fileType)
+	log.Print("fileSize: ", fileSize)
+
+	// 生成唯一文件名
+	filename := fmt.Sprintf("%d-%s", time.Now().Unix(), fileHeader.Filename)
+	log.Print("filename: ", filename)
+
+	// 设置保存文件的路径
+	var filePath string
+	if fileType == "image/jpeg" || fileType == "image/png" {
+		if fileSize < 2*1024*1024 {
+			filePath = "./uploads/avator/" + filename
+		} else {
+			filePath = "./uploads/files/" + filename
+		}
+	} else if fileType == "audio/mpeg" || fileType == "audio/wav" {
+		if fileSize < 60*1024*1024 {
+			filePath = "./uploads/audio/" + filename
+		} else {
+			filePath = "./uploads/files/" + filename
+		}
+	} else if fileType == "video/mp4" || fileType == "video/webm" {
+		if fileSize < 60*1024*1024 {
+			filePath = "./uploads/video/" + filename
+		} else {
+			filePath = "./uploads/files/" + filename
+		}
+	} else {
+		filePath = "./uploads/files/" + filename
+	}
+
+	// 确保目录存在
+	err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+	if err != nil {
+		log.Print("Failed to create directory: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create directory"})
+		return
+	}
+
+	// 创建目标文件
+	dst, err := os.Create(filePath)
+	if err != nil {
+		log.Print("Failed to create file: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+		return
+	}
+	defer dst.Close()
+
+	// 重新设置文件指针，确保文件流未被提前读取完
+	file.Seek(0, io.SeekStart)
+
+	// 将文件内容从上传的 file 写入到目标文件
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		log.Print("Failed to write file: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write file"})
+		return
+	}
+
+	// 生成文件的访问URL
+	fileURL := strings.TrimPrefix(filePath, "./uploads") // 去掉本地路径前缀，形成 URL 路径
+	fileURL = "http://localhost:8080/uploads" + fileURL
+
+	log.Print("File uploaded successfully: ", fileURL)
+
+	// 返回文件的URL
+	c.JSON(http.StatusOK, gin.H{"url": fileURL})
 }
