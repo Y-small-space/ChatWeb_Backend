@@ -14,6 +14,15 @@ const (
 	FileMessage  MessageType = "file"  // 文件消息
 )
 
+// ReplyMessage 定义引用消息的数据结构
+type ReplyMessage struct {
+	ID        primitive.ObjectID `bson:"id" json:"id"`                 // 被引用消息的 ID
+	Sender    string             `bson:"sender" json:"sender"`         // 发送者名称
+	Content   string             `bson:"content" json:"content"`       // 被引用的消息内容
+	Type      MessageType        `bson:"type" json:"type"`             // 消息类型（文本、图片、文件）
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"` // 消息发送时间
+}
+
 // Message 定义消息的数据结构
 type Message struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"id"`            // 消息的唯一标识符
@@ -29,7 +38,7 @@ type Message struct {
 	Status     string             `bson:"status" json:"status"`               // 消息状态（sent, delivered, read）
 	ReadBy     []ReadReceipt      `bson:"read_by" json:"read_by"`             // 读取消息的用户列表
 	FileName   string             `bson:"filename" json:"filename"`           // 文件名称
-	// Transfrom  string
+	Reply      []ReplyMessage     `bson:"reply" json:"reply"`                 // 被引用的消息列表（数组）
 }
 
 // ReadReceipt 定义消息已读回执

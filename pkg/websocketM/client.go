@@ -45,6 +45,15 @@ type Client struct {
 }
 type MessageType string
 
+// ReplyMessage 定义引用消息的数据结构
+type ReplyMessage struct {
+	ID        primitive.ObjectID `bson:"id" json:"id"`                 // 被引用消息的 ID
+	Sender    string             `bson:"sender" json:"sender"`         // 发送者名称
+	Content   string             `bson:"content" json:"content"`       // 被引用的消息内容
+	Type      MessageType        `bson:"type" json:"type"`             // 消息类型（文本、图片、文件）
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"` // 消息发送时间
+}
+
 // Message 结构体用于解析 WebSocket 消息
 type Message struct {
 	Type       MessageType        `bson:"type" json:"type"`                             // 消息类型（文本、图片、文件）
@@ -56,6 +65,7 @@ type Message struct {
 	Sender     string             `bson:"sender" json:"sender"`                         // 发送者 name
 	Receiver   string             `bson:"receiver" json:"receiver"`                     // 接收者 name
 	FileName   string             `bson:"filename" json:"filename"`                     // 文件名称
+	Reply      []ReplyMessage     `bson:"reply" json:"reply"`                           // 被引用的消息列表（数组）
 }
 
 // OnlineStatusMessage 结构体用于用户在线状态的消息
@@ -209,6 +219,21 @@ func (c *Client) handleChatMessage(msg Message) {
 
 	if msg.GroupID.String() != "" {
 		message.GroupID = msg.GroupID
+	}
+
+	log.Print("msg.Reply", len(msg.Reply))
+
+	if len(msg.Reply) > 0 {
+		var convertedReplies []model.ReplyMessage
+		for _, r := range msg.Reply {
+			convertedReplies = append(convertedReplies, model.ReplyMessage{
+				ID:      r.ID,
+				Sender:  r.Sender,
+				Content: r.Content,
+				Type:    model.MessageType(r.Type),
+			})
+		}
+		message.Reply = convertedReplies
 	}
 
 	repository.NewMessageRepository().Create(context.Background(), message)

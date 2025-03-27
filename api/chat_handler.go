@@ -39,8 +39,8 @@ func NewChatHandler(
 		onlineService:       onlineService,
 		wsHub:               websocketM.NewHub(eventBus), // 初始化 WebSocket Hub
 		upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024, // 设置 WebSocket 读取缓冲区大小
-			WriteBufferSize: 1024, // 设置 WebSocket 写入缓冲区大小
+			ReadBufferSize:  1024 * 1024, // 1MB
+			WriteBufferSize: 1024 * 1024, // 1MB
 			CheckOrigin: func(r *http.Request) bool {
 				return true // 在生产环境中应更加严格地检查 Origin
 			},
